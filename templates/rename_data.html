@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Data Renaming Settings{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h3>File List</h3>
+</div>
+
+<div class="row">
+	<div class="col-md-12">
+		<ul>
+	    {% for item in filelist %}
+	    	<li>{{ item.split('\\')[-1:][0] }}</li>
+	    {% endfor %}
+	    </ul>
+	</div>
+</div>
+{% endblock %}
