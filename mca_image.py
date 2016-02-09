@@ -2,6 +2,16 @@ import fnmatch
 import os
 import shutil
 
+# These are designators that are used to re-name the media files
+#  A - area, I - Internal, F - Defect, and P - Pipe
+DESIGNATORS = {
+	'AreaDesignator':'A', 
+	'InternalDesignator':'I', 
+	'DefectDesignator':'F', 
+	'PipeDesignator':'P' 
+	}
+
+
 class MCAImage(object):
 	"""An image handling object for PipeTech Mobile export project data. 
 	This class takes a filepath to a folder containing
@@ -24,7 +34,7 @@ class MCAImage(object):
 		self._build_file_list()
 
 	def get_file_list(self, tailpart=False):
-		"""Traverse the directory tree and get a list of all 
+		"""Traverse the directory tree and returns a list of all 
 		the files in all the subdirectories. Return an array of 
 		filenames with path based on rootPath. 
 
@@ -116,8 +126,9 @@ class MCAImage(object):
 
 
 	def remove_duplicates(self, seq, idfun=None):
+		# CREDITS: "http://www.peterbe.com/plog/uniqifiers-benchmark"
 		# order preserving removal of duplicates
-		# CREDITS: http://www.peterbe.com/plog/uniqifiers-benchmark
+		
 	    if idfun is None:
 	    	def idfun(x): return x
 
@@ -136,6 +147,11 @@ class MCAImage(object):
 
 
 	def stats(self):
+		"""Calculate and return a list of metrics on the data:
+		inspectionCount: total number of inspections,
+		fileCount: number of image files
+		folderPath: root path to the image files
+		"""
 		fileList = self.get_file_list(True)
 		inspectionList = self.inspections_from_filenames(fileList)
 		# number of items(files)
@@ -152,3 +168,53 @@ class MCAImage(object):
 			}
 
 		return result
+
+
+	def list_by_inspection(self):
+		"""Return a dictionary of images grouped by inspection, i.e.
+		{insp1:[img1, img2, img3,..], insp2:[img1, img2, img3,..], etc}
+
+		File-renaming designators used on items of format "inspection-12575_image_Header.1.jpg"
+		correspond with: 0 = Area, 1 = Area, 2 = Internal, 3+ = Defect
+		**** CHANGE THIS RULE IF THE PROJECT SPECIFICATIONS CHANGE ****
+		"""
+		designator_rule = ('AreaDesignator', 'AreaDesignator', 'InternalDesignator', 'DefectDesignator')
+
+		lbi_dict = dict()
+		# get a list of image filenames - i.e. without the folder part
+		filelist = self.get_file_list(True)
+		# get a list of unique inspection numbers - these will be dictionary keys in lbi_dict
+		inspectionList = self.inspections_from_filenames(filelist)
+		# the increment entity on the filename (0,1,2,etc) translates to (001,002,003,etc) on rename
+		position = "001"
+		# for each image in list of images
+		for imagename in filelist:
+			# parse imagename to get the inspection using self.inspection_from_filename(imagename)
+			inspection = str(self.inspection_from_filename(imagename))
+			increment = "{}".format(str(imagename.split('.')[1]))
+			if int(increment) >= len(designator_rule):
+				designator = DESIGNATORS[designator_rule[len(designator_rule) - 1]]
+			elif int(increment) >= 0:
+				designator = DESIGNATORS[designator_rule[int(increment)]]
+			else:
+				designator = DESIGNATORS[designator_rule[0]]
+
+			# if there is already an entry in the dictionary for this record, then append
+			if inspection in lbi_dict:
+				position = "{:0>3d}".format(len(lbi_dict[inspection]) + 1)
+			else:
+				lbi_dict[inspection] = []
+
+			# lbi_dict[inspection] = [(inspection, imagename, designator, position, increment)]
+			# TODO: add new name = MHID_<designator>_position.jpg to the tuple
+			lbi_dict[inspection].append( (inspection, imagename, designator, position, increment) )
+				
+		
+		return lbi_dict
+
+		
+	def sort_by_key(self, adict):
+		"""Sort a dictionary of values by the keys"""
+		dict_sorted_by_key = sorted(adict.items(), key = lambda t: t[0])
+		return dict_sorted_by_key
+

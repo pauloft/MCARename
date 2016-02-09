@@ -13,7 +13,7 @@ from mca_image import MCAImage
 
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = 'jJzKaZVeU8yoFNIlXK5qN9ksZDmzrpkwdm7TLhhIfitiAY5dcNNCQAC0j0L4n5Z'
-app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config['SECRET_KEY'] = str(os.environ.get('SECRET_KEY'))
 app.config['DEBUG'] = True
 
 manager = Manager(app)
@@ -27,6 +27,11 @@ class RenameDataForm(Form):
 	submit = SubmitField('Submit')
 
 
+class DBFilePathForm(Form):
+	"""Form to receive input path to the MS Access database file"""
+	databasefile = StringField('What is the full path to the database file?',validators=[Required()])
+	submit = SubmitField('Process')
+
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -39,42 +44,58 @@ def internal_server_error(e):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-	form = RenameDataForm()
+	form = DBFilePathForm()
 	if form.validate_on_submit():
-		old_dbfile = session.get('dbfile')
-		if old_dbfile is not None and old_dbfile != form.dbfile.data.filename:
-			flash('New database file selected.')
-		session['dbfile'] = form.dbfile.data.filename
-		session['dbpath'] = os.path.realpath(form.dbfile.data.filename)
-		# session['dbpath'] = os.path.dirname(os.path.realpath(form.dbfile.data.filename))
-		session['dirname'] = request.files['file']
-		# session['dirname'], filename = os.path.split(os.path.abspath(form.dbfile.data.filename))
+		old_databasefile = session.get('databasefile')
+		if old_databasefile is not None and old_databasefile != form.databasefile.data:
+			flash('Ok. You have changed the database file!')
+		session['databasefile'] = form.databasefile.data
+		session['imagesfolder'] = os.path.dirname(form.databasefile.data)
 		return redirect(url_for('index'))
-	return render_template(
-			'index.html', 
-			form=form, 
-			dbfile=session.get('dbfile'), 
-			dbpath=session.get('dbpath'),
-			dirname=session.get('dirname'))
+	return render_template('index.html', form=form, 
+		databasefile=session.get('databasefile'),
+		imagesfolder=session.get('imagesfolder')
+		)
 
 
-@app.route('/rename_data', methods=['GET', 'POST'])
+@app.route('/rename_data')
 def rename_data():
-	if session['dbfile'] and session['dbpath']:
-		dbpath = session['dbpath']
-		mca = MCAImage(dbpath)
-		filelist = mca.get_file_list()
-	return render_template('rename_data.html', filelist=filelist)
+	databasefile = session.get('databasefile')
+	imagesfolder = session.get('imagesfolder')
+	filelist = []
+	statistics = None
+	if databasefile is not None and imagesfolder is not None:
+		mca = MCAImage(imagesfolder)
+		filelist = mca.get_file_list(True)
+		statistics = mca.stats()
+	return render_template('rename_data.html', filelist=filelist, statistics=statistics)
+
+
+@app.route('/show_renames')
+def show_renames():
+	databasefile = session.get('databasefile')
+	imagesfolder = session.get('imagesfolder')
+	filelist = []
+	statistics = None
+	if databasefile is not None and imagesfolder is not None:
+		mca = MCAImage(imagesfolder)
+		# filelist = mca.get_file_list(True)
+		adict = mca.list_by_inspection()
+		statistics = mca.sort_by_key(adict)
+	return render_template('show_renames.html', statistics=statistics)
 
 
 @app.route('/stats', methods=['GET','POST'])
 def stats():
-	mca = MCAImage("C:\PythonDevel\mca_rename\Export02032016")
+	imagesfolder = session.get('imagesfolder')
 	filelist = None
-	if mca:
-		filelist = mca.get_file_list()
+	stats = None
+	if imagesfolder is not None:
+		mca = MCAImage(imagesfolder)
+		if mca:
+			filelist = mca.get_file_list()
 
-	stats = mca.stats()
+		stats = mca.stats()
 
 	return render_template('stats.html', filelist=filelist, stats=stats)
 

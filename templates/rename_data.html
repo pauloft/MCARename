@@ -9,12 +9,18 @@
 </div>
 
 <div class="row">
-	<div class="col-md-12">
+	<div class="col-md-8">
 		<ul>
 	    {% for item in filelist %}
-	    	<li>{{ item.split('\\')[-1:][0] }}</li>
+	    	<li>{{ item }}</li>
 	    {% endfor %}
 	    </ul>
+	</div>
+	<div class="col-md-4">
+		{% if statistics %}
+			<p class="statistics">Number of Inspections: {{ statistics.inspectionCount }}</p>
+			<p class="statistics">Number of Image Files: {{ statistics.fileCount }}</p>
+		{% endif %}
 	</div>
 </div>
 {% endblock %}

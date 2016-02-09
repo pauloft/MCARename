@@ -10,9 +10,8 @@
 
 <div class="row">
   <div class="col-md-8">
-  <p>{% if dbfile %}Database file: <strong>{{ dbfile }}</strong>{% else %}No database file selected{% endif %}</p>
-  <p>{% if dbpath %}Folder Path: <strong>{{ dbpath }}</strong>{% else %}Path not determined{% endif %}</p>
-  <p>Dir Name: {{ dirname }}</p>
+  <p>{% if databasefile %}Database file: <strong>{{ databasefile }}</strong>{% else %}No database file selected{% endif %}</p>
+  <p>{% if imagesfolder %}Media root folder: <strong>{{ imagesfolder }}</strong>{% else %}Path to media not determined{% endif %}</p>
   </div>
   <div class="col-md-4">
   	{{ wtf.quick_form(form) }}
