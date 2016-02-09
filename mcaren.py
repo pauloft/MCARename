@@ -12,7 +12,6 @@ from mca_image import MCAImage
 
 
 app = Flask(__name__)
-# app.config['SECRET_KEY'] = 'jJzKaZVeU8yoFNIlXK5qN9ksZDmzrpkwdm7TLhhIfitiAY5dcNNCQAC0j0L4n5Z'
 app.config['SECRET_KEY'] = str(os.environ.get('SECRET_KEY'))
 app.config['DEBUG'] = True
 
